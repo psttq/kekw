@@ -32,8 +32,10 @@ export class Game {
   }
 
   async _load_assets() {
-    await PIXI.Assets.load("../assets/box.jpg");
-    await PIXI.Assets.load("../assets/player_0.png");
+    await PIXI.Assets.load("./assets/circles/sphere-00.png");
+    await PIXI.Assets.load("./assets/circles/sphere-01.png");
+    await PIXI.Assets.load("./assets/circles/sphere-02.png");
+
   }
 
   async _game_loop(deltaTime: number) {
@@ -44,22 +46,24 @@ export class Game {
     await this._init();
     await this._load_assets();
 
-    let player_sprite = PIXI.Sprite.from("../assets/player_0.png");
+    let player_sprite = PIXI.Sprite.from("./assets/circles/sphere-00.png");
     this.player = new Player(
-      { x: 300, y: 300 },
-      { x: 100, y: 100 },
-      player_sprite
+      { x: this.pixi_app.canvas.width/2, y: this.pixi_app.canvas.height-35 },
+      { x: 50, y: 50 },
+      player_sprite,
+      this
     );
     this.addGameObject(this.player);
-
+    this.addGameObject(this.player.ball);
     let boxes = [];
-    for (let i = 0; i < 10; i++) {
-      let box_sprite = PIXI.Sprite.from("../assets/box.jpg");
+    for (let i = 0; i < 70; i++) {
+      let box_sprite = PIXI.Sprite.from("./assets/circles/sphere-01.png");
       let box = new GameObject(
-        { x: 400 + (55 * i) / 3, y: 300 + 55 * (i % 3) },
+        { x: 0 + (55 * i) / 5, y: 50 + 55 * (i % 5) },
         { x: 50, y: 50 },
         box_sprite,
-        "rectangle"
+        "circle",
+        this
       );
 
       box.body.frictionAir = 0.5;

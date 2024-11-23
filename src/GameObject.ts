@@ -1,11 +1,14 @@
 import * as PIXI from "pixi.js";
 import * as Matter from "matter-js";
+import { Game } from "./Game";
 
-export type BodyType = "circle" | "rectangle";
+export type BodyType = "circle" | "rectangle" | "none";
 
 export class GameObject {
   body: Matter.Body;
   sprite: PIXI.Sprite;
+
+  game: Game;
 
   body_type: BodyType;
 
@@ -15,8 +18,11 @@ export class GameObject {
     position: Matter.Vector,
     size: Matter.Vector,
     sprite: PIXI.Sprite,
-    body_type: BodyType
+    body_type: BodyType,
+    game: Game
   ) {
+    this.game = game;
+
     this.sprite = sprite;
     this.sprite.eventMode = "dynamic";
 
@@ -42,10 +48,25 @@ export class GameObject {
   }
 
   update(deltaTime: number) {
+    if (this.body.position.x < 0) {
+      Matter.Body.applyForce(this.body, this.body.position, { x: 5, y: 0 });
+    }
+    if (this.body.position.y < 0) {
+      Matter.Body.applyForce(this.body, this.body.position, { x: 0, y: 5 });
+    }
+    if (this.body.position.x > this.game.pixi_app.canvas.width) {
+      Matter.Body.applyForce(this.body, this.body.position, { x: -5, y: 0 });
+    }
+    if (this.body.position.y > this.game.pixi_app.canvas.height) {
+      Matter.Body.applyForce(this.body, this.body.position, { x: 0, y: -5 });
+    }
+
+
     this.sprite.x = this.body.position.x;
     this.sprite.y = this.body.position.y;
 
     if (this.updateRotation) this.sprite.rotation = this.body.angle;
+
   }
 
   _createDefaultBody() {
