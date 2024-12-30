@@ -1,5 +1,4 @@
-import * as Matter from "matter-js";
-import { GameObject } from "./GameObject";
+import { GameObject, Position, Size } from "./GameObject";
 import { FederatedMouseEvent, Sprite } from "pixi.js";
 import * as PIXI from "pixi.js";
 import { Game } from "./Game";
@@ -26,8 +25,8 @@ export class Player extends GameObject {
 
   ball_cd: number;
 
-  constructor(position: Matter.Vector, size: Matter.Vector, sprite: Sprite, game: Game) {
-    super(position, size, sprite, "circle", game);
+  constructor(position: Position, size: Size, sprite: Sprite, game: Game) {
+    super(-1, position, size, sprite, game);
     this.updateRotation = false;
 
     this.velocity = 20;
@@ -46,13 +45,18 @@ export class Player extends GameObject {
 
     this.game = game;
 
-
-    let ball_position = Matter.Vector.create(0, 0);
+    let ball_position: Position = { x: 0, y: 0 };
     ball_position.x = position.x;
     ball_position.y = position.y - 70;
 
     let ball_sprite = PIXI.Sprite.from("./assets/circles/sphere-02.png");
-    this.ball = new GameObject(ball_position, { x: 50, y: 50 }, ball_sprite, "circle",game);
+    this.ball = new GameObject(
+      0,
+      ball_position,
+      { width: 50, height: 50 },
+      ball_sprite,
+      game
+    );
 
     document.addEventListener("keydown", (e: KeyboardEvent) =>
       this.handleKeyDown(e.key)
@@ -74,20 +78,33 @@ export class Player extends GameObject {
   handleMouseMove(mouse_x: number, mouse_y: number) {
     this._mouse_x = mouse_x;
     this._mouse_y = mouse_y;
+    // this.sprite.position.x = mouse_x;
+    // this.sprite.position.y = mouse_y;
+    let message = {
+      id: this.game.player_id,
+      mouse_x: this._mouse_x,
+      mouse_y: this._mouse_y
+    };
+    this.game.sendMessage(JSON.stringify(message));
   }
 
   onTimerEnd() {
-    let ball_position = Matter.Vector.create(0, 0);
+    let ball_position: Position = { x: 0, y: 0 };
     ball_position.x = this.sprite.x;
     ball_position.y = this.sprite.y - 70;
 
     let ball_sprite = PIXI.Sprite.from("./assets/circles/sphere-02.png");
-    this.ball = new GameObject(ball_position, { x: 50, y: 50 }, ball_sprite, "circle", this.game);
+    this.ball = new GameObject(
+      0,
+      ball_position,
+      { width: 50, height: 50 },
+      ball_sprite,
+      this.game
+    );
     this.game.addGameObject(this.ball);
   }
 
   update(deltaTime: number) {
-
     if (this.ball) {
       let vec_x = this._mouse_x - this.sprite.x;
       let vec_y = this._mouse_y - this.sprite.y;
@@ -99,7 +116,8 @@ export class Player extends GameObject {
       let ball_position_x = this.sprite.x + vec_x * (this.ballRadius + 10);
       let ball_position_y = this.sprite.y + vec_y * (this.ballRadius + 10);
 
-      if (Number.isNaN(ball_position_x) || Number.isNaN(ball_position_y)) return;
+      if (Number.isNaN(ball_position_x) || Number.isNaN(ball_position_y))
+        return;
 
       this.ball.setPosition({ x: ball_position_x, y: ball_position_y });
       this.ball.update(deltaTime);
@@ -115,7 +133,6 @@ export class Player extends GameObject {
       }
     }
 
-    console.log(this.timer)
     super.update(deltaTime);
   }
 
@@ -133,7 +150,10 @@ export class Player extends GameObject {
     vec_x *= force;
     vec_y *= force;
 
-    Matter.Body.applyForce(this.ball.body, this.ball.body.position, { x: vec_x, y: vec_y });
+    // Matter.Body.applyForce(this.ball.body, this.ball.body.position, {
+    //   x: vec_x,
+    //   y: vec_y
+    // });
     this.balls.push(this.ball);
     this.ball = undefined;
 
@@ -141,11 +161,7 @@ export class Player extends GameObject {
     this.timer_started = true;
   }
 
-  handleKeyDown(key: string) {
+  handleKeyDown(key: string) {}
 
-  }
-
-  handleKeyUp(key: string) {
-
-  }
+  handleKeyUp(key: string) {}
 }
