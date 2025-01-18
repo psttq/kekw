@@ -2,17 +2,15 @@ import * as PIXI from "pixi.js";
 import { GameObject } from "./GameObject";
 import { Player } from "./Player";
 
-const SERVER_URL = "wss://217.28.221.89:8123";
+// const SERVER_URL = "wss://217.28.221.89:8123";
+const SERVER_URL = "ws://localhost:8000";
 
 export class Game {
-  matter_engine: Matter.Engine;
   pixi_app: PIXI.Application;
 
   websocket: WebSocket;
   gameObjects: GameObject[];
   addedGameObjects: GameObject[];
-
-  player_id: number;
 
   player: Player;
 
@@ -20,7 +18,6 @@ export class Game {
     this.pixi_app = new PIXI.Application();
     this.gameObjects = [];
     this.addedGameObjects = [];
-    this.player_id = -1;
   }
 
   sendMessage(str: string) {
@@ -28,10 +25,12 @@ export class Game {
   }
 
   addGameObject(gameObject: GameObject) {
+    this.gameObjects.push(gameObject);
     this.pixi_app.stage.addChild(gameObject.sprite);
   }
 
   removeGameObject(gameObject: GameObject) {
+    this.gameObjects = this.gameObjects.filter((x) => x !== gameObject);
     this.pixi_app.stage.removeChild(gameObject.sprite);
   }
 
@@ -54,7 +53,6 @@ export class Game {
       }
       this.addedGameObjects = [];
     }
-    this.addGameObject(this.player);
   }
 
   async _init_websocket() {
@@ -70,30 +68,40 @@ export class Game {
     };
 
     this.websocket.onmessage = (e) => {
-      console.log(`RECEIVED: ${e.data}`);
       let data = JSON.parse(e.data);
-      let d_gameObjects = data.gameObjects;
+      console.log(data);
+      let playerId = data.playerId;
+      let d_gameObjects = data.game.gameObjects;
+
+      let checkedGameObjects: number[] = [];
+
+      if (this.player.id === -1) {
+        this.player.id = playerId;
+      }
 
       for (let el of d_gameObjects) {
-        let ball_sprite = PIXI.Sprite.from("./assets/circles/sphere-02.png");
-        let ball = new GameObject(
-          el.id,
-          { x: el.position.x, y: el.position.y },
-          { width: 50, height: 50 },
-          ball_sprite,
-          this
-        );
+        checkedGameObjects.push(el.id);
         let go = this.gameObjects.find((x) => x.id == el.id);
         if (!go) {
-          this.gameObjects.push(ball);
+          let ball_sprite = PIXI.Sprite.from("./assets/circles/sphere-02.png");
+          let ball = new GameObject(
+            el.id,
+            { x: el.position.x, y: el.position.y },
+            { width: 50, height: 50 },
+            ball_sprite,
+            this
+          );
           this.addedGameObjects.push(ball);
         } else {
-          console.log(go);
           go.setPosition({ x: el.position.x, y: el.position.y });
         }
       }
-      if (this.player_id === -1) {
-        this.player_id = d_gameObjects.at(-1).id;
+      const gameObjectsToDelete = this.gameObjects.filter((x) => {
+        return !checkedGameObjects.includes(x.id);
+      });
+
+      for (let go of gameObjectsToDelete) {
+        this.removeGameObject(go);
       }
     };
 
@@ -113,6 +121,8 @@ export class Game {
       player_sprite,
       this
     );
+    this.player.id = -1;
+    this.addGameObject(this.player);
     this.pixi_app.ticker.add((ticker) => {
       this._game_loop(ticker.deltaTime);
     });

@@ -81,7 +81,7 @@ export class Player extends GameObject {
     // this.sprite.position.x = mouse_x;
     // this.sprite.position.y = mouse_y;
     let message = {
-      id: this.game.player_id,
+      id: this.id,
       mouse_x: this._mouse_x,
       mouse_y: this._mouse_y
     };
