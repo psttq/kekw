@@ -11,6 +11,7 @@ export class Game {
   websocket: WebSocket;
   gameObjects: GameObject[];
   addedGameObjects: GameObject[];
+  removeGameObjects: GameObject[];
 
   player: Player;
 
@@ -18,6 +19,7 @@ export class Game {
     this.pixi_app = new PIXI.Application();
     this.gameObjects = [];
     this.addedGameObjects = [];
+    this.removeGameObjects = [];
   }
 
   sendMessage(str: string) {
@@ -25,7 +27,6 @@ export class Game {
   }
 
   addGameObject(gameObject: GameObject) {
-    this.gameObjects.push(gameObject);
     this.pixi_app.stage.addChild(gameObject.sprite);
   }
 
@@ -53,6 +54,12 @@ export class Game {
       }
       this.addedGameObjects = [];
     }
+    if (this.removeGameObjects.length !== 0) {
+      for (let el of this.removeGameObjects) {
+        this.removeGameObject(el);
+      }
+      this.removeGameObjects = [];
+    }
   }
 
   async _init_websocket() {
@@ -69,7 +76,6 @@ export class Game {
 
     this.websocket.onmessage = (e) => {
       let data = JSON.parse(e.data);
-      console.log(data);
       let playerId = data.playerId;
       let d_gameObjects = data.game.gameObjects;
 
@@ -91,18 +97,18 @@ export class Game {
             ball_sprite,
             this
           );
+          console.log("player, ", playerId);
+          console.log("create id", el.id);
+
+          this.gameObjects.push(ball);
           this.addedGameObjects.push(ball);
         } else {
           go.setPosition({ x: el.position.x, y: el.position.y });
         }
       }
-      const gameObjectsToDelete = this.gameObjects.filter((x) => {
+      this.removeGameObjects = this.gameObjects.filter((x) => {
         return !checkedGameObjects.includes(x.id);
       });
-
-      for (let go of gameObjectsToDelete) {
-        this.removeGameObject(go);
-      }
     };
 
     this.websocket.onerror = (e) => {
@@ -123,6 +129,7 @@ export class Game {
     );
     this.player.id = -1;
     this.addGameObject(this.player);
+    this.gameObjects.push(this.player);
     this.pixi_app.ticker.add((ticker) => {
       this._game_loop(ticker.deltaTime);
     });
